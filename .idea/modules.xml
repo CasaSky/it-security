@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/it-security.iml" filepath="$PROJECT_DIR$/.idea/modules/it-security.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/it-security_main.iml" filepath="$PROJECT_DIR$/.idea/modules/it-security_main.iml" group="it-security" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/it-security_test.iml" filepath="$PROJECT_DIR$/.idea/modules/it-security_test.iml" group="it-security" />
+    </modules>
+  </component>
+</project>
