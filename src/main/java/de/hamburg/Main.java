@@ -1,151 +1,115 @@
 package de.hamburg;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import java.io.*;
-import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Scanner;
+
+import static de.hamburg.CryptographyUtils.checkPassword;
+import static de.hamburg.CryptographyUtils.generatePBKDF2Hash;
+import static de.hamburg.FileUtils.savePasswordToFile;
 
 public class Main {
 
+    private static File file = new File("data.txt");
+    private static OtpImpl otpImpl = new OtpImpl();
+
     public static void main(String[] args) {
-        File file = new File("data.txt");
+        Scanner scanner = new Scanner(System.in);
         while (true) {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("Enter a unsername:");
-            String username = scanner.next();
-            String password;
-            do {
-                System.out.println("Enter a password:");
-                password = scanner.next();
-            } while (!checkPassword(password));
-            String securePass = generatePBKDF2Hash(password);
-            System.out.println(securePass);
-            savePasswordToFile(file, username, securePass);
-        }
-    }
-
-    private static void savePasswordToFile(File file, String username, String password) {
-
-        String data = generateJson(username, password);
-
-        FileWriter fooWriter = null; // true to append
-        try {
-            fooWriter = new FileWriter(file, true);
-            // false to overwrite.
-            fooWriter.append(data);
-            fooWriter.append(System.getProperty( "line.separator" ));
-            fooWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private static String generateJson(String username, String password) {
-        JSONObject json = new JSONObject();
-        try {
-            json.put("username", username);
-            json.put("password", password);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return json.toString();
-    }
-
-    private static String generatePBKDF2Hash(String password) {
-
-        int iterations = 1000;
-        char[] passChars = password.toCharArray();
-        byte[] salt = getSalt();
-
-        int keyLength = 64 * 8; // 512
-        PBEKeySpec spec = new PBEKeySpec(passChars, salt, iterations, keyLength);
-        SecretKeyFactory skf = null;
-        byte[] hash = new byte[0];
-        try {
-            skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-            hash = skf.generateSecret(spec).getEncoded();
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println(e.getMessage());
-        } catch (InvalidKeySpecException e) {
-            System.err.println(e.getMessage());
-        }
-        return iterations + ":" + toHex(salt) + ":" + toHex(hash);
-    }
-
-    private static byte[] getSalt() {
-        SecureRandom sr = null;
-        byte[] salt = new byte[0];
-        try {
-            sr = SecureRandom.getInstance("SHA1PRNG");
-            salt = new byte[16];
-            sr.nextBytes(salt);
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println(e.getMessage());
-        }
-        return salt;
-    }
-
-    private static String toHex(byte[] array) {
-        BigInteger bi = new BigInteger(1, array);
-        String hex = bi.toString(16);
-        int paddingLength = (array.length * 2) - hex.length();
-        if(paddingLength > 0)
-        {
-            return String.format("%0"  +paddingLength + "d", 0) + hex;
-        }else{
-            return hex;
-        }
-    }
-
-    private static boolean checkPassword(String password) {
-
-        boolean hasLetter = false;
-        boolean hasDigit = false;
-        boolean hasUppercase = false;
-        boolean hasSpecialChar = false;
-        String specialChars = "/*!@#$%^&*()\"{}_[]|\\?/<>,.";
-
-        if (password.length() >= 8) {
-            for (int i = 0; i < password.length(); i++) {
-                char x = password.charAt(i);
-                if (Character.isLetter(x)) {
-
-                    hasLetter = true;
-
-                    if (Character.isUpperCase(x)) {
-
-                        hasUppercase = true;
-                    }
-                }
-
-                else if (Character.isDigit(x)) {
-
-                    hasDigit = true;
-                }
-
-
-                else if (specialChars.contains(""+x+"")) {
-
-                    hasSpecialChar = true;
-                }
-
-                if(hasLetter && hasDigit && hasUppercase && hasSpecialChar){
-
-                    return true;
-                }
-
+            System.out.println("Menu select (press any key to exit menu)");
+            System.out.println("1: register");
+            System.out.println("2: login");
+            String selection = scanner.next();
+            switch (selection) {
+                case "1":
+                    register();
+                    break;
+                case "2":
+                    login();
+                    break;
+                default:
+                    return;
             }
         }
-        System.out.println("Password is not strong, try again.");
-        return false;
     }
+
+    private static void login() {
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your unsername:");
+        String username = scanner.next();
+        System.out.println("Enter your password:");
+        String password = scanner.next();
+    }
+
+    private static void register() {
+        Scanner scanner1 = new Scanner(System.in);
+        Scanner scanner2 = new Scanner(System.in);
+
+        System.out.println("Enter a unsername:");
+        String username = scanner1.next();
+        String password;
+        boolean isOtp = false;
+        String securePass = null;
+
+        do {
+            System.out.println("Enter a password:");
+            password = scanner2.nextLine();
+        } while (!checkPassword(password));
+
+        if (password.isEmpty()) {
+            securePass = otpImpl.getOtpSecret();
+            isOtp = true;
+        } else {
+            securePass = generatePBKDF2Hash(password);
+            System.out.println(securePass);
+        }
+
+        savePasswordToFile(file, username, securePass, isOtp);
+    }
+
+/*static void setOTP(String username, int length) {
+        String password = generatePassword(length);
+        String securePass = generatePBKDF2Hash(password);
+        System.out.println(securePass);
+        savePasswordToFile(file, username, securePass, true);
+
+        ToDo:   file ist jetzt static, ok?
+                zusätzliches Flag in User/Password-Json um anzuzeigen ob es sich um ein OTP handelt oder nicht,
+                demenstprechend muss bei Verwendung des Passwortes anders reagiert werden (neues Passwort muss angelegt werden).
+                Der Rest müsste dann in Anwendung implementiert werden, was wir ja nicht machen brauchen.
+
+} */
+
+    /*static String generatePassword(int length) {
+        SecureRandom random = new SecureRandom();
+        String allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/*!@#$%^&*()\"{}_[]|\\?/<>,.";
+        String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String digits = "0123456789";
+        String specialChars = "/*!@#$%^&*()\"{}_[]|\\?/<>,.";
+        StringBuilder password = new StringBuilder(length);
+
+        password.append(lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length())));
+        password.append(upperCaseLetters.charAt(random.nextInt(upperCaseLetters.length())));
+        password.append(digits.charAt(random.nextInt(digits.length())));
+        password.append(specialChars.charAt(random.nextInt(specialChars.length())));
+        for (int i = 1; i <= length - 4; i++) {
+            password.append(allowedChars.charAt(random.nextInt(allowedChars.length())));
+        }
+        StringBuilder passwordToReturn = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            passwordToReturn.append(password.charAt(random.nextInt(password.length())));
+            Character charToIndex = passwordToReturn.charAt(i);
+            int indexToDelete = password.indexOf(charToIndex.toString());
+            password.deleteCharAt(indexToDelete);
+        }
+        String returnValue = passwordToReturn.toString();
+        passwordToReturn.delete(0,passwordToReturn.length());
+        password.delete(0,password.length());
+
+        return returnValue;
+
+    } */
 }
+
+
