@@ -1,7 +1,5 @@
 package de.hamburg;
 
-import org.jboss.aerogear.security.otp.Totp;
-import org.jboss.aerogear.security.otp.api.Base32;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -12,6 +10,7 @@ import java.security.spec.InvalidKeySpecException;
 
 public class CryptographyUtils {
 
+    //Password-Based Key Derivation Function 2
     public static String generatePBKDF2Hash(String password) {
 
         int iterations = 1000;

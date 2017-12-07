@@ -34,6 +34,8 @@ public class FileUtils {
                 //System.out.println(sCurrentLine);
                 try {
                     JSONObject json = new JSONObject(sCurrentLine);
+                    json.get("username");
+
                     //TODO
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -51,7 +53,7 @@ public class FileUtils {
         try {
             json.put("username", username);
             json.put("password", password);
-            json.put("Boolean", isOTP);
+            json.put("isOtp", isOTP);
 
         } catch (JSONException e) {
             e.printStackTrace();
